@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="oversea">
+	<insert id="addoversea" parameterType="ovo">
+		insert into oversea_semi VALUES(oversea_semi_seq.nextVal,
+		#{oarea},#{ottitle},#{ocontent},#{oimg},#{ocode},#{oprice},#{tsort})
+	</insert>
+
+	<select id="listoversea" resultType="ovo">
+		select
+		ono,oarea,ottitle,ocontent,oimg,oprice from oversea_semi
+	</select>
+
+	<select id="detailoversea" resultType="ovo" parameterType="int">
+		select
+		ono,oarea,ottitle,ocontent,oimg,oprice from oversea_semi where
+		ono=#{ono}
+	</select>
+
+	<delete id="deloversea" parameterType="int">
+		delete from oversea_semi where
+		ono=#{ono}
+	</delete>
+
+	<update id="modifyoversea" parameterType="ovo">
+		update oversea_semi
+		set oarea=#{oarea},
+		ottitle=#{ottitle},
+		ocontent=#{ocontent},
+		oimg=#{oimg},
+		oprice=#{oprice}
+		where ono=#{ono}
+	</update>
+</mapper>
