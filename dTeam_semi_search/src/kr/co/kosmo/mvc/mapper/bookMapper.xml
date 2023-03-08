@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="book">
+	<!-- reserv -->
+	<insert id="addBook" parameterType="bookvo">
+		Insert Into
+		book_semi
+		Values(book_semi_seq.nextVal,#{mid},#{lid},#{itype},'상품준비중',#{sdate},#{edate},sysdate)
+	</insert>
+
+	<!-- reserv + ch : 예약시퀀스 =결제시퀀스 -->
+	<insert id="addBookCh" parameterType="chargevo">
+		<selectKey keyProperty="chno" resultType="int"
+			order="BEFORE">
+			select book_semi_seq.currVal from dual
+		</selectKey>
+		Insert Into chargeM_semi Values(#{chno},#{chtype},#{chpay},sysdate)
+	</insert>
+
+	<!-- ========================================================== -->
+	<!-- tourcount : 월별 여행비율 => 차트 -->
+	<select id="tourcount" parameterType="int" resultType="bookvo">
+		SELECT
+		TO_CHAR(bdate, 'yyyy-mm') month,mid,COUNT(*) tcount
+		FROM book_semi
+		where mid=#{mid}
+		GROUP BY
+		TO_CHAR(bdate, 'yyyy-mm'), mid
+		ORDER by 1 desc
+	</select>
+
+	<!-- ========================================================== -->
+	<!-- 상위 리스트 -->
+	<resultMap type="bookvo" id="localRank">
+		<result property="lid" column="lid" javaType="int" />
+		<association property="local" column="bno" javaType="lvo">
+			<id property="lno" column="lno" javaType="int" />
+			<result property="htcode" column="htcode" javaType="int" />
+			<result property="lprice" column="lprice" javaType="int" />
+			<result property="tsort" column="tsort" javaType="int" />
+			<result property="larea" column="larea" />
+			<result property="ltitle" column="ltitle" />
+			<result property="lcontent" column="lcontent" />
+			<result property="limg" column="limg" />
+		</association>
+	</resultMap>
+	<select id="rankLocal" resultMap="localRank">
+		select * from (
+		select lid, sum(bookcnt) as cntSum from book_semi b,
+		local_semi l where
+		b.lid = l.lno group by lid order by
+		cntSum desc
+		) a,
+		local_semi l where a.lid = l.lno and rownum <![CDATA[<]]>
+		4
+	</select>
+
+	<!-- ========================================================== -->
+	<!-- 예약폼 적용_국내여행 -->
+	<resultMap type="lvo" id="localTotal">
+		<id property="lno" column="lno" javaType="int" />
+		<result property="htcode" column="htcode" javaType="int" />
+		<result property="lprice" column="lprice" javaType="int" />
+		<result property="tsort" column="tsort" javaType="int" />
+		<result property="larea" column="larea" />
+		<result property="ltitle" column="ltitle" />
+		<result property="lcontent" column="lcontent" />
+		<result property="limg" column="limg" />
+		<collection property="item" javaType="java.util.List"
+			ofType="itemvo">
+			<result property="lid" column="lid" javaType="int" />
+			<result property="iname" column="iname" />
+			<result property="iprice" column="iprice" javaType="int" />
+			<result property="iimg" column="iimg" />
+			<result property="istock" column="istock" javaType="int" />
+		</collection>
+	</resultMap>
+	<select id="detailLocalTotal" resultMap="localTotal"
+		parameterType="int">
+		select * from local_semi l, item_semi i where l.lno =
+		i.lid and l.lno = #{lno }
+	</select>
+
+
+	<!-- ========================================================== -->
+	<!-- calendar -->
+	<select id="bookCalendar" resultType="bookvo">
+		select * from book_semi
+	</select>
+	<!-- ========================================================== -->
+    <!-- 객실 정보 -->
+    <select id="detailItem" resultType="itemvo" parameterType="int">
+        select lid, itype from item_semi where lid = #{lid }
+    </select>
+    <!-- 객실 확인 -->
+    <select id="checkItem" resultType="int" parameterType="itemvo">
+        select count(*) from item_semi where lid = #{lid } and itype = #{itype } and istock <![CDATA[<]]>= (
+            select count(*) from book_semi
+            where lid = #{lid } and itype = #{itype }
+            and (sdate <![CDATA[<]]>= #{sdate } and edate >= #{sdate }
+            or sdate <![CDATA[<]]>= #{edate } and edate >= #{edate })
+        )
+    </select>
+    <!-- 숙박일수 받기 -->
+    <select id="getBookCnt" resultType="int" parameterType="itemvo">
+        select round(31 * months_between(
+            to_date(#{edate }, 'yyyy-mm-dd'),
+            to_date(#{sdate }, 'yyyy-mm-dd')
+        ), 0) + 1 from dual
+    </select>
+</mapper>

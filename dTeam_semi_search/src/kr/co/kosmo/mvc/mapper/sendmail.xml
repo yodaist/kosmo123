@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mail">
+
+    <select id="reservemail" resultType="mailvo">
+    	select to_char(sdate,'yy/mm/dd')as sdate,to_char(edate,'yy/mm/dd')as edate,chpay from sendmail
+    </select>
+    
+    <update id="textupdate" parameterType="mailvo">
+    	update sendmail set
+ 		sdate=#{sdate},
+ 		edate=#{edate},
+ 		chpay=(#{chpay}*trunc(mod(mod(months_between(#{edate},#{sdate})/12,1)*12,1)*(365/12),0)+1)-1
+    </update>
+</mapper>
